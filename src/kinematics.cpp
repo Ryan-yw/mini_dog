@@ -3,12 +3,14 @@
 #include<fstream>
 #include"plan.h"
 #include"kinematics.h"
-extern double file_leg_xyz[12];
 
+extern double file_leg_xyz[12];
+extern double input_angle[12];
 double L1 = 86.07;
 double L2 = 306;
 double L3 = 341.04;
 
+//身体在腿坐标系下的变换矩阵
 double PL1[16] =
 {
     -1, 0,  0,  body_long/2 ,
@@ -42,10 +44,10 @@ double PL4[16] =
 };
 
 
-extern double input_angle[12];
 
 
-double* t_matrix_g_to_l(const double* p_bl, double* p_gb, double* pm_out)
+
+double* t_matrix_ground_to_leg(const double* p_bl, double* p_gb, double* pm_out)
 {
 	pm_out[0] = p_bl[0] * p_gb[0] + p_bl[1] * p_gb[4] + p_bl[2] * p_gb[8];
 	pm_out[1] = p_bl[0] * p_gb[1] + p_bl[1] * p_gb[5] + p_bl[2] * p_gb[9];
@@ -197,7 +199,6 @@ void leg_right_34(double* ee_xyz_wrt_leg, double* mot_pos_3)
         mot_pos_3[1] = 180 - A - B;
     }
 }
-
 int inverse(double *leg_in_ground,double *body_in_ground)
 {
     double P_bg[16] =     //地面坐标系相对身体的变换矩阵
@@ -209,10 +210,10 @@ int inverse(double *leg_in_ground,double *body_in_ground)
     };
 
     double real_pm1[16] = { 0 }, real_pm2[16] = { 0 }, real_pm3[16] = { 0 }, real_pm4[16] = {0};
-	t_matrix_g_to_l(PL1, P_bg, real_pm1);
-	t_matrix_g_to_l(PL2, P_bg, real_pm2);
-	t_matrix_g_to_l(PL3, P_bg, real_pm3);
-	t_matrix_g_to_l(PL4, P_bg, real_pm4);
+	t_matrix_ground_to_leg(PL1, P_bg, real_pm1);
+	t_matrix_ground_to_leg(PL2, P_bg, real_pm2);
+	t_matrix_ground_to_leg(PL3, P_bg, real_pm3);
+	t_matrix_ground_to_leg(PL4, P_bg, real_pm4);
 
     //for (int j = 0; j < 16; j++)
     //{
