@@ -12,6 +12,9 @@ struct WalkParam
 	double a;                                  //前向步长
 	double b;                                  //步高
 	double c;                                  //侧向步长
+	double roll;                              //绕身体x轴转角
+	double yaw;                                //绕身体y轴转角
+	double pitch;                               //绕身体z轴转角
 	int    per_step_count;                     //每一步时长
 	int    n;                                  //步数
 };

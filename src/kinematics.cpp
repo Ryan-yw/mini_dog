@@ -201,14 +201,10 @@ void leg_right_34(double* ee_xyz_wrt_leg, double* mot_pos_3)
 }
 int inverse(double *leg_in_ground,double *body_in_ground)
 {
-    double P_bg[16] =     //地面坐标系相对身体的变换矩阵
-    {
-        1, 0, 0,-body_in_ground[0],
-        0, 1, 0,-body_in_ground[1],
-        0, 0, 1,body_in_ground[2],
-        0, 0, 0, 1
-    };
-
+    
+    double * P_bg = body_in_ground;  //地面坐标系相对身体的变换矩阵
+       
+   
     double real_pm1[16] = { 0 }, real_pm2[16] = { 0 }, real_pm3[16] = { 0 }, real_pm4[16] = {0};
 	t_matrix_ground_to_leg(PL1, P_bg, real_pm1);
 	t_matrix_ground_to_leg(PL2, P_bg, real_pm2);
@@ -224,7 +220,7 @@ int inverse(double *leg_in_ground,double *body_in_ground)
 
     //    }
     //}
-    double xyz_in_leg[12] = {0};
+    double xyz_in_leg[12] = {0}; //腿末端在腿坐标系下的表达
 	compute_xyz_for_leg(real_pm1, leg_in_ground + 0 * 3, xyz_in_leg + 0 * 3);
 	compute_xyz_for_leg(real_pm2, leg_in_ground + 1 * 3, xyz_in_leg + 1 * 3);
 	compute_xyz_for_leg(real_pm3, leg_in_ground + 2 * 3, xyz_in_leg + 2 * 3);
