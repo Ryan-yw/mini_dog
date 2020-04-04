@@ -133,12 +133,31 @@ void leg_left_12(double* ee_xyz_wrt_leg, double* mot_pos_3)
 
     if (x <= 0 && y < 0)
     {
-        mot_pos_3[1] = A - B;
+        mot_pos_3[1] = A + B;
     }
-    else if (x > 0 && y <= 0)
+
+    if (x > 0 && y <= 0)
     {
-        mot_pos_3[1] = 180 - A - B;
+        mot_pos_3[1] = 180 - A + B;
     }
+
+    if (x <= 0 && y > 0)
+    {
+        mot_pos_3[1] = -A + B;
+    }
+
+    if (x > 0 && y >= 0)
+    {
+        mot_pos_3[1] = -180 + A + B;
+    }
+    //if (x <= 0 && y < 0)
+    //{
+    //    mot_pos_3[1] = A - B;
+    //}
+    //else if (x > 0 && y <= 0)
+    //{
+    //    mot_pos_3[1] = 180 - A - B;
+    //}
 }
 void leg_right_34(double* ee_xyz_wrt_leg, double* mot_pos_3)
 {

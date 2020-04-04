@@ -4,7 +4,7 @@
 #include"plan.h"
 #include"kinematics.h"
 
-
+extern double time1;
 /****************************²ÎÊıÅäÖÃ******************************/
 
 
@@ -313,6 +313,7 @@ int walk_plan(int count, WalkParam* param)
 	current_body[11] = -current_body[11];
 	inverse(current_leg,current_body);
 
+	time1 = time1 + 0.1;
 	return 2 * n * per_step_count - count - 1;
 }
 
