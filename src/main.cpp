@@ -159,7 +159,60 @@ auto execute(int command, int state)->std::tuple<int, std::string>
 		{
 			if (state == HOMEFINISH || state == PREPAIRD)
 			{
+				ofstream fout("plan_data_in_ground.txt", ios::out);
+				ofstream angle("input_angle.txt", ios::out);
+				ofstream xyz_leg("xyz_in_leg.txt", ios::out);
+				angle << "q1.1" << "\t" << "q1.2" << "\t" << "q1.3" << "\t";//输出文件抬头
+				angle << "q2.1" << "\t" << "q2.2" << "\t" << "q2.3" << "\t";
+				angle << "q3.1" << "\t" << "q3.2" << "\t" << "q3.3" << "\t";
+				angle << "q4.1" << "\t" << "q4.2" << "\t" << "q4.3" << "\t";
+				angle << "time" << endl;
+				param.a = 0;          //前后步长mm
+				param.b = 0;            //步高mm
+				param.c = 0;            //左右步长
+				param.pitch = 0;        //单位为度
+				param.roll = 0;
+				param.yaw = 0;
+				param.n = 1;             //步数
+				param.per_step_count = 100;   //0.5s     1s算100次，10毫秒算1次，
 
+				int ret = 1;
+				for (int i = 0; ret; ++i)
+				{
+
+					//param = config_motion_param();//行走参数配置
+					ret = walk_plan_standup(i, &param);  //轨迹规划
+
+					{
+						for (int j = 0; j < 12; j++)
+						{
+							fout << file_current_leg[j] << "\t";
+						}
+						fout << file_current_body[3] << "\t" << file_current_body[7] << "\t" << file_current_body[11] << std::endl;
+
+						for (int j = 0; j < 12; j++)
+						{
+							xyz_leg << file_leg_xyz[j] << "\t" << "\t";
+
+						}
+						xyz_leg << std::endl;
+
+						for (int j = 0; j < 12; j++)
+						{
+							input_angle[j] = input_angle[j] * PI / 180;
+							angle << input_angle[j] << "\t";
+
+						}
+						angle << time1;
+						angle << std::endl;
+					}
+
+				}
+				{
+					fout.close();
+					angle.close();
+					xyz_leg.close();
+				}
 				std::cout << "prepair finish" << std::endl;
 			}
 			return std::make_tuple<int, std::string>(0, "prepair finish");

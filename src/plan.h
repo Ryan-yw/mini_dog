@@ -1,6 +1,8 @@
 #pragma once 
 
 int walk_plan(int count, struct WalkParam* param);
+int walk_plan_standup(int count, struct WalkParam* param);
+
 WalkParam config_motion_param();
 
 const double PI = 3.141592657;

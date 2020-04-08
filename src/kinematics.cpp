@@ -6,7 +6,7 @@
 
 extern double file_leg_xyz[12];
 extern double input_angle[12];
-double L1 = 86.07;
+double L1 = 86.07;  //mm
 double L2 = 306;
 double L3 = 341.04;
 
@@ -218,6 +218,7 @@ void leg_right_34(double* ee_xyz_wrt_leg, double* mot_pos_3)
         mot_pos_3[1] = 180 - A - B;
     }
 }
+
 int inverse(double *leg_in_ground,double *body_in_ground)
 {
     
