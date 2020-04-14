@@ -43,7 +43,7 @@ extern double file_current_body[16];
 const double body0[16] =
 {
 	1, 0, 0, 0,
-	0, 1, 0, 93,
+	0, 1, 0, 0,
 	0, 0, 1, 0,
 	0, 0, 0, 1
 };
@@ -319,12 +319,82 @@ int walk_plan(int count, WalkParam* param)
 	current_body[11] = -current_body[11];
 	inverse(current_leg,current_body);
 
-	time1 = time1 + 0.1;
+	time1 = time1 + 0.02;
 	return 2 * n * per_step_count - count - 1;
 }
 
 
-int walk_plan_standup(int count, WalkParam* param)
+int standup_plan(int count, WalkParam* param)
+{
+	double a = param->a;
+	double b = param->b;
+	double c = param->c;
+	double pitch = param->pitch;
+	double roll = param->roll;
+	double yaw = param->yaw;
+	int per_step_count = param->per_step_count;
+	int n = param->n;
+
+
+	static double current_leg[12] = { 0 };
+	static double current_body[16] = { 1,0,0,0,
+									   0,1,0,0,
+									   0,0,1,0,
+									   0,0,0,1 };
+
+
+
+	//求加速度曲线
+	int current_count = count % per_step_count;
+	double s = 0;
+	s = -(PI / 2) * cos(PI * (current_count + 1) / per_step_count) + PI / 2;//s从0到pi
+
+
+	//判断行走状态
+	int e_1 = count / per_step_count;  //判断当前在走哪一步,腿走一步e1加1
+	int e_2 = e_1 / 2;                //判断当前在哪一步，腿走两步e2加1
+
+
+
+	//正式开始规划
+	if (e_1 == 0)   //加速段
+	{
+
+		//规划身体
+		current_body[3] = a * count * count / (4.0 * per_step_count * per_step_count);
+		current_body[7] = body0[7] + (body_high - body0[7]) * s / PI;
+		current_body[11] = c * count * count / (4.0 * per_step_count * per_step_count);
+	}
+	else if (e_1 == (2 * n - 1))//减速段
+	{
+		//规划身体
+		int t = (2 * n - 1) * per_step_count + per_step_count;
+		current_body[3] = -a * (count - t) * (count - t) / (4.0 * per_step_count * per_step_count) + a * n - a / 2.0;//n * a 
+		current_body[7] = body0[7] + (body_high - body0[7]) * s / PI;
+		current_body[11] = -c * (count - t) * (count - t) / (4.0 * per_step_count * per_step_count) + c * n - c / 2.0;
+	}
+	else //匀速段
+	{
+		//规划身体
+		current_body[3] = a / 4.0 + a * (count - per_step_count) / per_step_count / 2;//速度为100mm/s  每秒计数per_step_count
+		current_body[7] = body0[7] + (body_high - body0[7]) * s / PI;
+		current_body[11] = c / 4.0 + c * (count - per_step_count) / per_step_count / 2;
+	}
+
+
+	for (int j = 0; j < 16; j++)
+	{
+		file_current_body[j] = current_body[j];
+	}
+
+	inverse(current_leg, current_body);
+
+	time1 = time1 + 0.02;
+	return n * per_step_count - count - 1;
+}
+
+
+int body_rotation_plan(int count, WalkParam* param)
 {
 	double a = param->a;
 	double b = param->b;
@@ -430,8 +500,7 @@ int walk_plan_standup(int count, WalkParam* param)
 	current_body[11] = -current_body[11];
 	inverse(current_leg, current_body);
 
-	time1 = time1 + 0.1;
+	time1 = time1 + 0.02;
 	return  n * per_step_count - count - 1;
 }
-
 /****************************轨迹规划******************************/

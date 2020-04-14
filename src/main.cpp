@@ -20,6 +20,7 @@ using namespace std;
 double file_leg_xyz[12] = { 0 };
 double file_current_leg[12] = { 0 };
 double file_current_body[16] = { 0 };
+double  time1 = 0;
 
 double input_angle[12] = { 0 };
 WalkParam param;
@@ -27,7 +28,7 @@ WalkParam param;
 //ofstream angle("input_angle.txt",ios::out);
 //ofstream xyz_leg("xyz_in_leg.txt",ios::out);
 
-double  time1=0;
+
 
 
 
@@ -45,6 +46,7 @@ enum  //状态常量
 	HOMEFINISH = 2, //回原点结束
 	PREPAIRD = 3,	 //准备
 	RUNNING = 4,		//运行
+//	STAND = 5,       //站立
 	ERRO = 5,		 //错误
 };
 
@@ -57,17 +59,27 @@ enum  //命令常量
 	LEFT = 4,      //左移
 	RIGHT = 5,      //右移
 	TURNL = 6,      //左旋
-	TURNR = 7		//右旋
+	TURNR = 7,		//右旋
+	PITCHUP = 8,     //俯仰
+	PITCHDOWM = 9,     //
+	ROLLL = 10,     //横滚
+	ROLLR = 11,     //
+	YAWL = 12,     //偏航
+	YAWR = 13,     //
 };
-int table_state[6][8] =       //状态表
-{
-	//       home    prepair  forward    back      lest     right   turnl    turnr
-	 {      HOMED,        -1,      -1,      -1,      -1,      -1,      -1,      -1},		//init0
-	 { HOMEFINISH,        -1,      -1,      -1,      -1,      -1,      -1,      -1},		//homed1
-	 { HOMEFINISH,  PREPAIRD,      -1,      -1,      -1,      -1,      -1,      -1},		//homefinish2
-	 {         -1,  PREPAIRD, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING},		//prepaird3
-	 {         -1,        -1, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING},		//running4
-	 {       ERRO,      ERRO,    ERRO,    ERRO,    ERRO,    ERRO,    ERRO, ERRO}		   //error5
+int table_state[6][14] =       //状态表
+{   //              准备命令                                              行走命令                                        站立命令
+	//       home    prepair  forward    back      lest     right   turnl    turnr  pitchup  pitchdown  rolll  rollr   yawl   yawr
+	 {      HOMED,        -1,      -1,      -1,      -1,      -1,      -1,      -1,      -1,        -1,    -1,    -1,    -1,    -1},		//init0
+	 { HOMEFINISH,        -1,      -1,      -1,      -1,      -1,      -1,      -1,      -1,        -1,    -1,    -1,    -1,    -1},		//homed1
+	 { HOMEFINISH,  PREPAIRD,      -1,      -1,      -1,      -1,      -1,      -1,      -1,        -1,    -1,    -1,    -1,    -1},		//homefinish2
+	 {         -1,  PREPAIRD, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING,   RUNNING, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING},		//prepaird3
+	 {         -1,  PREPAIRD, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING,   RUNNING, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING},		//running4
+//	 {         -1,  PREPAIRD, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING,   RUNNING, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING},		//stand
+//	 {         -1,  PREPAIRD, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING,   STAND,     STAND, STAND, STAND, STAND, STAND},		//prepaird3
+//	 {         -1,  PREPAIRD, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING,   STAND,     STAND, STAND, STAND, STAND, STAND},		//running4
+//	 {         -1,  PREPAIRD, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING, RUNNING,   STAND,     STAND, STAND, STAND, STAND, STAND},		//stand
+	 {       ERRO,      ERRO,    ERRO,    ERRO,    ERRO,    ERRO,    ERRO,    ERRO,   ERRO,       ERRO,  ERRO,  ERRO,  ERRO,  ERRO}		   //error5
 };
 
 
@@ -76,14 +88,20 @@ auto current_state(std::string& cmd) ->int
 {
 	std::map<std::string, int> int2str =
 	{
-		std::make_pair(std::string("home"),    HOME),
-		std::make_pair(std::string("prepair"), PREPAIR),
-		std::make_pair(std::string("forward"), FORWARD),
-		std::make_pair(std::string("back"),    BACK),
-		std::make_pair(std::string("left"),    LEFT),
-		std::make_pair(std::string("right"),   RIGHT),
-		std::make_pair(std::string("turnl"),   TURNL),
-		std::make_pair(std::string("turnr"),   TURNR),
+		std::make_pair(std::string("home"),      HOME),
+		std::make_pair(std::string("prepair"),   PREPAIR),
+		std::make_pair(std::string("forward"),   FORWARD),
+		std::make_pair(std::string("back"),      BACK),
+		std::make_pair(std::string("left"),      LEFT),
+		std::make_pair(std::string("right"),     RIGHT),
+		std::make_pair(std::string("turnl"),     TURNL),
+		std::make_pair(std::string("turnr"),     TURNR),
+		std::make_pair(std::string("pitchup"),   PITCHUP),
+		std::make_pair(std::string("pitchdown"), PITCHDOWM),
+		std::make_pair(std::string("rolll"),     ROLLL),
+		std::make_pair(std::string("rollr"),     ROLLR),
+		std::make_pair(std::string("yawl"),      YAWL),
+		std::make_pair(std::string("yawr"),      YAWR),
 	};
 	command = int2str.at(cmd);
 	return table_state[state][command];
@@ -94,19 +112,19 @@ auto StringParser(std::string& cmd)->std::string
 {
 	std::string str1;
 
-	int len = cmd.size();  //cmd为网页发送字符串,计算字符长度)
-	if (len < 8)
+	int len = cmd.size();  //cmd为网页发送字符串,计算字符长度)  
+	if (cmd[len - 1] < 48 || cmd[len - 1] > 57)    //非行走命令
 	{
 		str1 = cmd;  //str_command为抽取命令字符串
 		step = 0;
 	}
-	else if ((cmd[len - 1] >= 48 && cmd[len - 1] <= 57) && (cmd[len - 2] < 48 || cmd[len - 2] > 57))
+	else if ((cmd[len - 1] >= 48 && cmd[len - 1] <= 57) && (cmd[len - 2] < 48 || cmd[len - 2] > 57))  //行走步数为0-9
 	{
 		str1.assign(cmd, 0, len - 6);  //str_command为抽取命令字符串
 		step = cmd[len - 1];     //a为步数
 		step = step - 48;
 	}
-	else if ((cmd[len - 1] >= 48 && cmd[len - 1] <= 57) && (cmd[len - 2] >= 48 || cmd[len - 2] <= 57))
+	else if ((cmd[len - 1] >= 48 && cmd[len - 1] <= 57) && (cmd[len - 2] >= 48 || cmd[len - 2] <= 57))  //行走步数为10-99
 	{
 		str1.assign(cmd, 0, len - 7);  //str_command为抽取命令字符串
 		step = (cmd[len - 1] - 48) + (cmd[len - 2] - 48) * 10;     //a为步数
@@ -118,19 +136,6 @@ auto StringParser(std::string& cmd)->std::string
 ///**************网页命令解析******************/
 
 
-//void execute(WalkParam & x)
-//{
-//	//fout << "x1" << "\t" << "y1" << "\t" << "z1" << "\t";//输出文件抬头
-//	//fout << "x2" << "\t" << "y2" << "\t" << "z2" << "\t";
-//	//fout << "x3" << "\t" << "y3" << "\t" << "z3" << "\t";
-//	//fout << "x4" << "\t" << "y4" << "\t" << "z4" << "\t";
-//	//fout << "body_x" << "\t" << endl;
-//
-//
-//
-//
-//
-//}
 
 
 
@@ -155,7 +160,7 @@ auto execute(int command, int state)->std::tuple<int, std::string>
 			return std::make_tuple<int, std::string>(0, "home finished");
 			break;
 		}
-		case PREPAIR:
+		case PREPAIR:   //起立
 		{
 			if (state == HOMEFINISH || state == PREPAIRD)
 			{
@@ -181,7 +186,7 @@ auto execute(int command, int state)->std::tuple<int, std::string>
 				{
 
 					//param = config_motion_param();//行走参数配置
-					ret = walk_plan_standup(i, &param);  //轨迹规划
+					ret = standup_plan(i, &param);  //轨迹规划
 
 					{
 						for (int j = 0; j < 12; j++)
@@ -237,7 +242,7 @@ auto execute(int command, int state)->std::tuple<int, std::string>
 				param.roll = 0;        
 				param.yaw = 0;
 				param.n = n;             //步数
-				param.per_step_count = 50;   //0.5s     1s算100次，10毫秒算1次，
+				param.per_step_count = 100;   //0.5s     1s算100次，10毫秒算1次，
 
 				int ret = 1;
 				for (int i = 0; ret; ++i)
@@ -595,6 +600,67 @@ auto execute(int command, int state)->std::tuple<int, std::string>
 				std::cout << "turn right finish" << std::endl;
 			}
 			return std::make_tuple<int, std::string>(0, "turn right finish");
+			break;
+		}
+		case PITCHUP:
+		{
+			if (state == PREPAIRD || state == RUNNING)
+			{
+			
+				std::cout << "pitch up finish" << std::endl;
+			}
+			return std::make_tuple<int, std::string>(0, "pitch up finish");
+			break;
+		}
+		case PITCHDOWM:
+		{
+			if (state == PREPAIRD || state == RUNNING)
+			{
+				
+				std::cout << "pitch down finish" << std::endl;
+			}
+			return std::make_tuple<int, std::string>(0, "pitch down finish");
+			break;
+		}
+		case ROLLL:
+		{
+			if (state == PREPAIRD || state == RUNNING)
+			{
+				
+				std::cout << "roll left finish" << std::endl;
+			}
+			return std::make_tuple<int, std::string>(0, "roll left finish");
+			break;
+		}
+		case ROLLR:
+		{
+			if (state == PREPAIRD || state == RUNNING)
+			{
+				
+
+				std::cout << "roll right finish" << std::endl;
+			}
+			return std::make_tuple<int, std::string>(0, "roll right finish");
+			break;
+		}
+		case YAWL:
+		{
+			if (state == PREPAIRD || state == RUNNING)
+			{
+				
+				std::cout << "yaw left finish" << std::endl;
+			}
+			return std::make_tuple<int, std::string>(0, "yaw left finish");
+			break;
+		}
+		case YAWR:
+		{
+			if (state == PREPAIRD || state == RUNNING)
+			{
+				
+				std::cout << "yaw right finish" << std::endl;
+			}
+			return std::make_tuple<int, std::string>(0, "yaw right finish");
 			break;
 		}
 	}
